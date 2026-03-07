@@ -14,20 +14,20 @@ Width = 4
 Height = 4
 Board = []
 
-def ResetBoard(RandomOption):
+def ResetBoard(RandomOption, difficulty = 1):
     global Board
     Board = []
     for Row in range(Height):
         Board.append([])
         for Column in range(Width):
             if RandomOption:
-                Board[Row].append(GetRandomTile())
+                Board[Row].append(GetRandomTile(difficulty))
             else:
                 Board[Row].append(TILE)
 
-def GetRandomTile():
-    Rand = random.randint(1, 10)
-    if Rand < 10:
+def GetRandomTile(difficulty):
+    Rand = random.uniform(1, 10)
+    if Rand < (11-difficulty*1.75):
         return TILE
     else:
         return NO_TILE
@@ -94,37 +94,39 @@ def ProcessMove(Move):
             for column in range(Width):
                 if Board[row][column] == TILE:
                     tilesLeft += 1
-        if len(StartCoords) == 0 or len(EndCoords) == 0:
-            return False
         if StartCoords[0] != EndCoords[0] and StartCoords[1] != EndCoords[1]:
-            return False
+            return "Double row"
         if StartCoords[0] == EndCoords[0]:
             ToRemove = EndCoords[1] - StartCoords[1] + 1
-            if ToRemove >= tilesLeft:
-                return False
             for Cell in range(StartCoords[1], EndCoords[1] + 1):
                 if Board[StartCoords[0]][Cell] == TILE:
                     ToRemove -= 1
+                    tilesLeft -= 1
             if ToRemove == 0:
                 for Cell in range(StartCoords[1], EndCoords[1] + 1):
                     Board[StartCoords[0]][Cell] = NO_TILE
             else:
-                return False
+                return "Empty tile on the way"
+            if tilesLeft < 1:
+                return "Not enough tiles"
         else:
             ToRemove = EndCoords[0] - StartCoords[0] + 1
-            if ToRemove >= tilesLeft:
-                return False
             for Cell in range(StartCoords[0], EndCoords[0] + 1):
                 if Board[Cell][StartCoords[1]] == TILE:
                     ToRemove -= 1
+                    tilesLeft -= 1
             if ToRemove == 0:
                 for Cell in range(StartCoords[0], EndCoords[0] + 1):
                     Board[Cell][StartCoords[1]] = NO_TILE
             else:
-                return False
-        return True
+                return "Empty tile on the way"
+            if tilesLeft < 1:
+                return "Not enough tiles"
+        return "Correct move"
     except IndexError:
-        return False
+        return "Empty string"
+    except ValueError:
+        return "Incorrect format"
 
 def SetBoardSize():
     global Width
@@ -176,25 +178,41 @@ def CheckGameOver():
 def PlayGame():
     print(f"Valid moves are within the range A1-{ConvertCoordsToRef(Height - 1, Width - 1)}")
     GameOver = False
-    NextPlayer = 1
-    while not GameOver:
-        DisplayState(NextPlayer)
-        print()
-        IsValid = False
-        while not IsValid:
-            Move = input("Enter move: ")
-            IsValid = ProcessMove(Move)
-            if not IsValid:
-                print("\033[31mNot a valid move - try again\033[0m")
-        NextPlayer = NextPlayer % 2 + 1
-        if CheckGameOver():
-            GameOver = True
-            print(f"\033[32mGame over - player {NextPlayer % 2 + 1} wins\033[0m")
+    try:
+        NextPlayer = int(input("Enter which player is going first: "))
+        while not GameOver:
+            DisplayState(NextPlayer)
             print()
-            DisplayBoard()
-            print()
-            print("Press enter to continue")
-            input()
+            IsValid = ""
+            while IsValid != "Correct move":
+                Move = input("Enter move: ")
+                IsValid = ProcessMove(Move)
+                match IsValid:
+                    case "Empty string":
+                        print("\033[31mThe entered string is empty!\033[0m")
+                    case "Incorrect format":
+                        print("\033[31mThe move must be entered in the form, similar to A1-D1!\033[0m")
+                    case "Double row":
+                        print("\033[31mThe player can only make a move across a single straight line!\033[0m")
+                    case "Empty tile on the way":
+                        print("\033[31mThere are empty tiles on the way!\033[0m")
+                    case "Not enough tiles":
+                        print("\033[31mCannot make a move that removes all tiles left from the board!\033[0m")
+                    case "Correct move":
+                        pass
+                    case _:
+                        pass
+            NextPlayer = NextPlayer % 2 + 1
+            if CheckGameOver():
+                GameOver = True
+                print(f"\033[32mGame over - player {NextPlayer % 2 + 1} wins\033[0m")
+                print()
+                DisplayBoard()
+                print()
+                print("Press enter to continue")
+                input()
+    except ValueError:
+        print("\033[31mCan only enter 1 or 2 for player order!\033[0m")
 
 def Main():
     Playing = True
@@ -208,7 +226,20 @@ def Main():
                 UserInput = int(input("Enter a choice: "))
                 if UserInput == 1:
                     ExitMenu = True
-                    ResetBoard(RandomOption)
+                    difficulty = ""
+                    while difficulty not in ["low", "mid", "high"]:
+                        difficulty = input("Select difficulty of the game(\033[32mlow\033[0m, \033[33mmid\033[0m, \033[31mhigh\033[0m): ")
+                    match difficulty:
+                        case "low":
+                            difficulty = 1
+                        case "mid":
+                            difficulty = 2
+                        case "high":
+                            difficulty = 3
+                        case _:
+                            print("\033[31mUnknown difficulty, difficulty is set to 0\033[0m")
+                            difficulty = 0
+                    ResetBoard(RandomOption, difficulty)
                 elif UserInput == 2:
                     SetBoardSize()
                 elif UserInput == 3:
