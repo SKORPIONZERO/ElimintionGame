@@ -74,8 +74,58 @@ def ConvertCoordsToRef(Row, Column):
         Ref = Letter + str(Number)
     return Ref
 
+def SearchForAllowedMoves():
+    tilesLeft = 0
+    longestMoveLength = 0
+    allowedMoves = []
+    for row in range(Height):
+        for column in range(Width):
+            if Board[row][column] == TILE:
+                tilesLeft += 1
+            for i in range(0, Width):
+                if row+i<Width:
+                    # Check every Tile before the final one
+                    if Board[row+i][column] == TILE and f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row+i, column)}" not in allowedMoves:
+                        if i+1<tilesLeft:
+                            allowedMoves.append(f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row+i, column)}")
+                            if i+1 > longestMoveLength:
+                                longestMoveLength = i+1
+            for j in range(0, Height):
+                if column+j<Height:
+                    if Board[row][column+j] == TILE and f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row, column+j)}" not in allowedMoves:
+                        if j+1<tilesLeft:
+                            allowedMoves.append(f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row, column+j)}")
+                            if i+1 > longestMoveLength:
+                                longestMoveLength = j+1
+    return allowedMoves, longestMoveLength
+
+def SearchForLongestMoves():
+    allowedMoves = SearchForAllowedMoves()
+    longestMoveLength = allowedMoves[1]
+    allowedMoves = allowedMoves[0]
+    longestMoves = []
+    for i in allowedMoves:
+        MiddleIndex = i.index("-")
+        MovePart1 = i[:MiddleIndex]
+        MovePart2 = i[MiddleIndex+1:]
+        if MovePart1[0] != MovePart2[0]:
+            moveLength = abs(ord(MovePart1[0])-ord(MovePart2[0]))+1
+        elif MovePart1[1:] != MovePart2[1:]:
+            moveLength = abs(int(MovePart1[1:])-int(MovePart2[1:]))+1
+        else:
+            moveLength = 1
+        if moveLength == longestMoveLength:
+            longestMoves.append(i)
+    return longestMoves
+
+def ProvideHint():
+    print(SearchForLongestMoves())
+
 def ProcessMove(Move):
     try:
+        if Move == "H":
+            ProvideHint()
+            return "Correct move"
         if "-" in Move:
             DashPos = Move.index("-")
             FirstRef = Move[0:DashPos]
@@ -227,8 +277,9 @@ def Main():
                 if UserInput == 1:
                     ExitMenu = True
                     difficulty = ""
-                    while difficulty not in ["low", "mid", "high"]:
-                        difficulty = input("Select difficulty of the game(\033[32mlow\033[0m, \033[33mmid\033[0m, \033[31mhigh\033[0m): ")
+                    if RandomOption == True:
+                        while difficulty not in ["low", "mid", "high"]:
+                            difficulty = input("Select difficulty of the game(\033[32mlow\033[0m, \033[33mmid\033[0m, \033[31mhigh\033[0m): ")
                     match difficulty:
                         case "low":
                             difficulty = 1
@@ -237,7 +288,7 @@ def Main():
                         case "high":
                             difficulty = 3
                         case _:
-                            print("\033[31mUnknown difficulty, difficulty is set to 0\033[0m")
+                            print("Difficulty is set to 0")
                             difficulty = 0
                     ResetBoard(RandomOption, difficulty)
                 elif UserInput == 2:
