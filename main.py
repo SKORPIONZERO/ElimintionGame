@@ -82,21 +82,29 @@ def SearchForAllowedMoves():
         for column in range(Width):
             if Board[row][column] == TILE:
                 tilesLeft += 1
-            for i in range(0, Width):
-                if row+i<Width:
+    for row in range(Height):
+        for column in range(Width):
+            for i in range(0, Height):
+                if row+i<Height:
                     # Check every Tile before the final one
-                    if Board[row+i][column] == TILE and f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row+i, column)}" not in allowedMoves:
-                        if i+1<tilesLeft:
-                            allowedMoves.append(f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row+i, column)}")
-                            if i+1 > longestMoveLength:
-                                longestMoveLength = i+1
-            for j in range(0, Height):
-                if column+j<Height:
-                    if Board[row][column+j] == TILE and f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row, column+j)}" not in allowedMoves:
-                        if j+1<tilesLeft:
-                            allowedMoves.append(f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row, column+j)}")
-                            if i+1 > longestMoveLength:
-                                longestMoveLength = j+1
+                    if Board[row+i][column] == TILE:
+                        if f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row+i, column)}" not in allowedMoves:
+                            if i+1<tilesLeft:
+                                allowedMoves.append(f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row+i, column)}")
+                                if i+1 > longestMoveLength:
+                                    longestMoveLength = i+1
+                    else:
+                        break
+            for j in range(0, Width):
+                if column+j<Width:
+                    if Board[row][column+j] == TILE:
+                        if f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row, column+j)}" not in allowedMoves:
+                            if j+1<tilesLeft:
+                                allowedMoves.append(f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row, column+j)}")
+                                if j+1 > longestMoveLength:
+                                    longestMoveLength = j+1
+                    else:
+                        break
     return allowedMoves, longestMoveLength
 
 def SearchForLongestMoves():
@@ -118,13 +126,10 @@ def SearchForLongestMoves():
             longestMoves.append(i)
     return longestMoves
 
-def ProvideHint():
-    print(SearchForLongestMoves())
-
 def ProcessMove(Move):
     try:
         if Move == "H":
-            ProvideHint()
+            print(f"Hint: Consider {random.choice(SearchForLongestMoves())}")
             return "Correct move"
         if "-" in Move:
             DashPos = Move.index("-")
