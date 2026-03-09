@@ -1,19 +1,15 @@
-# Skeleton Program for the AQA AS Summer 2026 examination
-# this code should be used in conjunction with the Preliminary Material
-# written by the AQA Programmer Team
-# developed using PyCharm Community Edition 2022
-
-# Version number 0.0.1
-
 import random
 import time
 
 TILE = "[X]"
 NO_TILE = "[ ]"
+MAX_WIDTH = 26
+MAX_HEIGHT = 30
 
 Width = 4
 Height = 4
 Board = []
+
 Player1Wins = 0
 Player2Wins = 0
 ComputerWins = 0
@@ -50,7 +46,7 @@ def DisplayBoard():
     print("  ", end='')
     for Column in range(Width):
         if Column >= 26:
-            Header = "A" + chr(Column + 65-26)
+            Header = chr(Column//26+64) + chr((Column%26) + 65)
             print(f" {Header} ", end='')
         else:
             Header = chr(Column + 65)
@@ -150,6 +146,10 @@ def ProcessMove(Move):
             FirstRef = FirstRef+SecondRef
             SecondRef = FirstRef[:len(SecondRef)]
             FirstRef = FirstRef[len(SecondRef):]
+        elif int(FirstRef[1:]) > int(SecondRef[1:]):
+            FirstRef = FirstRef+SecondRef
+            SecondRef = FirstRef[:(len(FirstRef)-len(SecondRef))]
+            FirstRef = FirstRef[len(SecondRef):]
         StartCoords = ConvertRefToCoords(FirstRef)
         EndCoords = ConvertRefToCoords(SecondRef)
         tilesLeft = 0
@@ -167,11 +167,11 @@ def ProcessMove(Move):
                     tilesLeft -= 1
             if ToRemove == 0:
                 for Cell in range(StartCoords[1], EndCoords[1] + 1):
+                    if tilesLeft < 1:
+                        return "Not enough tiles"
                     Board[StartCoords[0]][Cell] = NO_TILE
             else:
                 return "Empty tile on the way"
-            if tilesLeft < 1:
-                return "Not enough tiles"
         else:
             ToRemove = EndCoords[0] - StartCoords[0] + 1
             for Cell in range(StartCoords[0], EndCoords[0] + 1):
@@ -180,11 +180,11 @@ def ProcessMove(Move):
                     tilesLeft -= 1
             if ToRemove == 0:
                 for Cell in range(StartCoords[0], EndCoords[0] + 1):
+                    if tilesLeft < 1:
+                        return "Not enough tiles"
                     Board[Cell][StartCoords[1]] = NO_TILE
             else:
                 return "Empty tile on the way"
-            if tilesLeft < 1:
-                return "Not enough tiles"
         return "Correct move"
     except IndexError:
         return "Empty string"
@@ -196,12 +196,19 @@ def SetBoardSize():
     global Height
     try:
         Width = int(input("Specify board width: "))
-        while Width < 2:
-            print("\033[31mIncorrect size has been entered!\033[0m")
+        
+        while Width < 2 or Width > MAX_WIDTH:
+            if Width > MAX_WIDTH:
+                print(f"\033[31mWidth cannot be higher than {MAX_WIDTH}\033[0m")
+            elif Width < 2:
+                print("\033[31mWidth cannot be lower than 2\033[0m")
             Width = int(input("Specify board width: "))
         Height = int(input("Specify board height: "))
-        while Height < 2:
-            print("\033[31mIncorrect size has been entered!\033[0m")
+        while Height < 2 or Height > MAX_HEIGHT:
+            if Height > MAX_HEIGHT:
+                print(f"\033[31mHeight cannot be higher than {MAX_HEIGHT}\033[0m")
+            elif Height < 2:
+                print("\033[31mHeight cannot be lower than 2\033[0m")
             Height = int(input("Specify board height: "))
     except ValueError:
         print("\033[31mOnly integers are allowed to be entered!\033[0m")
@@ -245,6 +252,7 @@ def CheckGameOver():
         return False
 
 def PlayGame(GameMode):
+    global Player1Wins, Player2Wins, PlayerAgainstComputerWins, ComputerWins, Width
     print(f"Valid moves are within the range A1-{ConvertCoordsToRef(Height - 1, Width - 1)}")
     GameOver = False
     try:
@@ -301,7 +309,7 @@ def PlayGame(GameMode):
                     if (NextPlayer % 2 + 1) == 1:
                         Player1Wins += 1
                     elif (NextPlayer % 2 + 1) == 2:
-                        Player2Wins
+                        Player2Wins += 1
                 else:
                     if NextPlayer == 1:
                         print(f"\033[31mGame over - computer wins\033[0m")
@@ -355,7 +363,7 @@ def Main():
                     RandomOption = not RandomOption
                 elif UserInput == 4:
                     ExitMenu = True
-                    GameMode == "Multi Player"
+                    GameMode = "Multi Player"
                     print("Game mode is changed to Multi Player")
                     LoadTestBoard()
                 elif UserInput == 5:
