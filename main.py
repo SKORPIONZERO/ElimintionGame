@@ -1,6 +1,7 @@
 import random
 import time
 
+
 TILE = "[X]"
 NO_TILE = "[ ]"
 MAX_WIDTH = 26
@@ -9,13 +10,15 @@ MAX_HEIGHT = 30
 Width = 4
 Height = 4
 Board = []
+Last2MovesHistory = []
 
 Player1Wins = 0
 Player2Wins = 0
 ComputerWins = 0
 PlayerAgainstComputerWins = 0
 
-def ResetBoard(RandomOption, difficulty = 1):
+
+def ResetBoard(RandomOption, difficulty=1):
     global Board
     Board = []
     for Row in range(Height):
@@ -28,7 +31,7 @@ def ResetBoard(RandomOption, difficulty = 1):
 
 def GetRandomTile(difficulty):
     Rand = random.uniform(1, 10)
-    if Rand < (11-difficulty*1.75):
+    if Rand < (11 - difficulty * 1.75):
         return TILE
     else:
         return NO_TILE
@@ -46,7 +49,7 @@ def DisplayBoard():
     print("  ", end='')
     for Column in range(Width):
         if Column >= 26:
-            Header = chr(Column//26+64) + chr((Column%26) + 65)
+            Header = chr(Column // 26 + 64) + chr((Column % 26) + 65)
             print(f" {Header} ", end='')
         else:
             Header = chr(Column + 65)
@@ -58,7 +61,7 @@ def DisplayBoard():
         else:
             print(Row + 1, end=" ")
         for Column in range(Width):
-                print(f" {Board[Row][Column]}", end='')
+            print(f" {Board[Row][Column]}", end='')
         print()
 
 def ConvertRefToCoords(Ref):
@@ -72,7 +75,7 @@ def ConvertRefToCoords(Ref):
 
 def ConvertCoordsToRef(Row, Column):
     Ref = ""
-    if Row < Height and Column < Width:        
+    if Row < Height and Column < Width:
         Letter = chr(Column + 65)
         Number = Row + 1
         Ref = Letter + str(Number)
@@ -89,24 +92,25 @@ def SearchForAllowedMoves():
     for row in range(Height):
         for column in range(Width):
             for i in range(0, Height):
-                if row+i<Height:
-                    # Check every Tile before the final one
-                    if Board[row+i][column] == TILE:
-                        if f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row+i, column)}" not in allowedMoves:
-                            if i+1<tilesLeft:
-                                allowedMoves.append(f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row+i, column)}")
-                                if i+1 > longestMoveLength:
-                                    longestMoveLength = i+1
+                if row + i < Height:
+                    if Board[row + i][column] == TILE:
+                        if f"{ConvertCoordsToRef(row, column)}-{ConvertCoordsToRef(row + i, column)}" not in allowedMoves:
+                            if i + 1 < tilesLeft:
+                                allowedMoves.append(
+                                    f"{ConvertCoordsToRef(row, column)}-{ConvertCoordsToRef(row + i, column)}")
+                                if i + 1 > longestMoveLength:
+                                    longestMoveLength = i + 1
                     else:
                         break
             for j in range(0, Width):
-                if column+j<Width:
-                    if Board[row][column+j] == TILE:
-                        if f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row, column+j)}" not in allowedMoves:
-                            if j+1<tilesLeft:
-                                allowedMoves.append(f"{ConvertCoordsToRef(row,column)}-{ConvertCoordsToRef(row, column+j)}")
-                                if j+1 > longestMoveLength:
-                                    longestMoveLength = j+1
+                if column + j < Width:
+                    if Board[row][column + j] == TILE:
+                        if f"{ConvertCoordsToRef(row, column)}-{ConvertCoordsToRef(row, column + j)}" not in allowedMoves:
+                            if j + 1 < tilesLeft:
+                                allowedMoves.append(
+                                    f"{ConvertCoordsToRef(row, column)}-{ConvertCoordsToRef(row, column + j)}")
+                                if j + 1 > longestMoveLength:
+                                    longestMoveLength = j + 1
                     else:
                         break
     return allowedMoves, longestMoveLength
@@ -119,44 +123,62 @@ def SearchForLongestMoves():
     for i in allowedMoves:
         MiddleIndex = i.index("-")
         MovePart1 = i[:MiddleIndex]
-        MovePart2 = i[MiddleIndex+1:]
+        MovePart2 = i[MiddleIndex + 1:]
         if MovePart1[0] != MovePart2[0]:
-            moveLength = abs(ord(MovePart1[0])-ord(MovePart2[0]))+1
+            moveLength = abs(ord(MovePart1[0]) - ord(MovePart2[0])) + 1
         elif MovePart1[1:] != MovePart2[1:]:
-            moveLength = abs(int(MovePart1[1:])-int(MovePart2[1:]))+1
+            moveLength = abs(int(MovePart1[1:]) - int(MovePart2[1:])) + 1
         else:
             moveLength = 1
         if moveLength == longestMoveLength:
             longestMoves.append(i)
     return longestMoves
 
+def ProcessHint(Move):
+    if Move == "H":
+        print(f"Hint: Consider {random.choice(SearchForLongestMoves())}")
+        return True
+
+def ProcessUndo(Move):
+    if Move == "U":
+        print(f"Undo")
+        # ======================================================================================================
+        return True
+
+def ProcessCoordinates(Move):
+    if "-" in Move:
+        DashPos = Move.index("-")
+        FirstRef = Move[0:DashPos]
+        SecondRef = Move[DashPos + 1:]
+    else:
+        FirstRef = Move
+        SecondRef = Move
+    if ord(FirstRef[0]) > ord(SecondRef[0]):
+        FirstRef = FirstRef + SecondRef
+        SecondRef = FirstRef[:len(SecondRef)]
+        FirstRef = FirstRef[len(SecondRef):]
+    elif int(FirstRef[1:]) > int(SecondRef[1:]):
+        FirstRef = FirstRef + SecondRef
+        SecondRef = FirstRef[:(len(FirstRef) - len(SecondRef))]
+        FirstRef = FirstRef[len(SecondRef):]
+    return FirstRef, SecondRef
+
+def CountTilesLeft(Board):
+    tilesLeft = 0
+    for row in range(Height):
+        for column in range(Width):
+            if Board[row][column] == TILE:
+                tilesLeft += 1
+    return tilesLeft
+
 def ProcessMove(Move):
     try:
-        if Move == "H":
-            print(f"Hint: Consider {random.choice(SearchForLongestMoves())}")
+        if ProcessHint(Move):
             return "Correct move"
-        if "-" in Move:
-            DashPos = Move.index("-")
-            FirstRef = Move[0:DashPos]
-            SecondRef = Move[DashPos + 1:]
-        else:
-            FirstRef = Move
-            SecondRef = Move
-        if ord(FirstRef[0])>ord(SecondRef[0]):
-            FirstRef = FirstRef+SecondRef
-            SecondRef = FirstRef[:len(SecondRef)]
-            FirstRef = FirstRef[len(SecondRef):]
-        elif int(FirstRef[1:]) > int(SecondRef[1:]):
-            FirstRef = FirstRef+SecondRef
-            SecondRef = FirstRef[:(len(FirstRef)-len(SecondRef))]
-            FirstRef = FirstRef[len(SecondRef):]
+        FirstRef, SecondRef = ProcessCoordinates(Move)
         StartCoords = ConvertRefToCoords(FirstRef)
         EndCoords = ConvertRefToCoords(SecondRef)
-        tilesLeft = 0
-        for row in range(Height):
-            for column in range(Width):
-                if Board[row][column] == TILE:
-                    tilesLeft += 1
+        tilesLeft = CountTilesLeft(Board)
         if StartCoords[0] != EndCoords[0] and StartCoords[1] != EndCoords[1]:
             return "Double row"
         if StartCoords[0] == EndCoords[0]:
@@ -196,7 +218,6 @@ def SetBoardSize():
     global Height
     try:
         Width = int(input("Specify board width: "))
-        
         while Width < 2 or Width > MAX_WIDTH:
             if Width > MAX_WIDTH:
                 print(f"\033[31mWidth cannot be higher than {MAX_WIDTH}\033[0m")
@@ -241,15 +262,48 @@ def LoadTestBoard():
     ProcessMove("D1-D2")
 
 def CheckGameOver():
-    Remaining = 0
-    for Row in range(Height):
-        for Column in range(Width):
-            if Board[Row][Column] == TILE:
-                Remaining += 1
+    Remaining = CountTilesLeft(Board)
     if Remaining == 1:
         return True
     else:
         return False
+
+def ProcessGameOver(GameMode, NextPlayer):
+    global Player1Wins, Player2Wins, PlayerAgainstComputerWins, ComputerWins
+    GameOver = True
+    if GameMode == "Multi Player":
+        print(f"\033[32mGame over - player {NextPlayer % 2 + 1} wins\033[0m")
+        if (NextPlayer % 2 + 1) == 1:
+            Player1Wins += 1
+        elif (NextPlayer % 2 + 1) == 2:
+            Player2Wins += 1
+    else:
+        if NextPlayer == 1:
+            print(f"\033[31mGame over - computer wins\033[0m")
+            ComputerWins += 1
+        else:
+            print(f"\033[32mGame over - player wins\033[0m")
+            PlayerAgainstComputerWins += 1
+    print()
+    DisplayBoard()
+    print()
+    print("Press enter to continue")
+    input()
+    return GameOver
+
+def ProcessComputerMove():
+    randomizer = random.uniform(1, 10)
+    if randomizer < 5:
+        Move = random.choice(SearchForLongestMoves())
+    else:
+        Move = random.choice(SearchForAllowedMoves()[0])
+    MiddleIndex = Move.index("-")
+    if Move[:MiddleIndex] == Move[MiddleIndex + 1:]:
+        Move = Move[:MiddleIndex]
+    IsValid = ProcessMove(Move)
+    time.sleep(1)
+    print(f"The computer made move: {Move}")
+    return IsValid
 
 def PlayGame(GameMode):
     global Player1Wins, Player2Wins, PlayerAgainstComputerWins, ComputerWins, Width
@@ -259,7 +313,7 @@ def PlayGame(GameMode):
         if GameMode == "Multi Player":
             NextPlayer = int(input("Enter which player is going first: "))
         else:
-            NextPlayer = random.choice([1,-1])
+            NextPlayer = random.choice([1, -1])
         while not GameOver:
             DisplayState(NextPlayer)
             print()
@@ -284,17 +338,7 @@ def PlayGame(GameMode):
                         case _:
                             pass
                 else:
-                    randomiser = random.uniform(1,10)
-                    if randomiser < 5:
-                        Move = random.choice(SearchForLongestMoves())
-                    else:
-                        Move = random.choice(SearchForAllowedMoves()[0])
-                    MiddleIndex = Move.index("-")
-                    if Move[:MiddleIndex] == Move[MiddleIndex+1:]:
-                        Move = Move[:MiddleIndex]
-                    IsValid = ProcessMove(Move)
-                    time.sleep(1)
-                    print(f"The computer made move: {Move}")
+                    ProcessComputerMove()
             if GameMode == "Multi Player":
                 NextPlayer = NextPlayer % 2 + 1
             else:
@@ -303,25 +347,7 @@ def PlayGame(GameMode):
                 else:
                     NextPlayer = 1
             if CheckGameOver():
-                GameOver = True
-                if GameMode == "Multi Player":
-                    print(f"\033[32mGame over - player {NextPlayer % 2 + 1} wins\033[0m")
-                    if (NextPlayer % 2 + 1) == 1:
-                        Player1Wins += 1
-                    elif (NextPlayer % 2 + 1) == 2:
-                        Player2Wins += 1
-                else:
-                    if NextPlayer == 1:
-                        print(f"\033[31mGame over - computer wins\033[0m")
-                        ComputerWins += 1
-                    else:
-                        print(f"\033[32mGame over - player wins\033[0m")
-                        PlayerAgainstComputerWins += 1
-                print()
-                DisplayBoard()
-                print()
-                print("Press enter to continue")
-                input()
+                GameOver = ProcessGameOver(GameMode, NextPlayer)
     except ValueError:
         print("\033[31mCan only enter 1 or 2 for player order!\033[0m")
 
@@ -329,7 +355,8 @@ def SelectDifficulty(RandomOption):
     difficulty = ""
     if RandomOption == True:
         while difficulty not in ["low", "mid", "high"]:
-            difficulty = input("Select difficulty of the game(\033[32mlow\033[0m, \033[33mmid\033[0m, \033[31mhigh\033[0m): ")
+            difficulty = input(
+                "Select difficulty of the game(\033[32mlow\033[0m, \033[33mmid\033[0m, \033[31mhigh\033[0m): ")
     match difficulty:
         case "low":
             difficulty = 1
@@ -342,10 +369,7 @@ def SelectDifficulty(RandomOption):
             difficulty = 0
     return difficulty
 
-def Main():
-    Playing = True
-    RandomOption = False
-    GameMode = "Multi Player"
+def Menu(Playing, RandomOption, GameMode):
     while Playing:
         ExitMenu = False
         while not ExitMenu:
@@ -363,8 +387,9 @@ def Main():
                     RandomOption = not RandomOption
                 elif UserInput == 4:
                     ExitMenu = True
-                    GameMode = "Multi Player"
-                    print("Game mode is changed to Multi Player")
+                    if GameMode == "Single Player":
+                            GameMode = "Multi Player"
+                            print("Game mode is changed to Multi Player")
                     LoadTestBoard()
                 elif UserInput == 5:
                     if GameMode == "Multi Player":
@@ -379,8 +404,15 @@ def Main():
                 print("\033[31mOnly integers are allowed to be entered!\033[0m")
         if Playing:
             PlayGame(GameMode)
+
+def Main():
+    Playing = True
+    RandomOption = False
+    GameMode = "Multi Player"
+    Menu(Playing, RandomOption, GameMode)
     print("Press enter to continue")
     input()
+
 
 if __name__ == "__main__":
     Main()
