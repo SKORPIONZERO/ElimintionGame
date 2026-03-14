@@ -1,5 +1,6 @@
 import random
 import time
+import os
 
 
 TILE = "[X]"
@@ -18,6 +19,7 @@ Player1Wins = 0
 Player2Wins = 0
 ComputerWins = 0
 PlayerAgainstComputerWins = 0
+PlayersTurnAfterLoadingGame = 0
 
 
 def ResetBoard(difficulty=1):
@@ -141,6 +143,7 @@ def DisplayMenu():
     print(f"3 - Toggle random option (currently {RandomOption})")
     print("4 - Load test board (4 x 4)")
     print(f"5 - Change game mode (currently {GameMode})")
+    print(f"6 - Load the game")
     print("9 - Quit")
     match GameMode:
         case "Multi Player":
@@ -278,25 +281,84 @@ def ProcessSave(Move, NextPlayer):
             # Size of the Board
             file.write(f"Size of the Board: {Width}x{Height}\n")
 
-            # Last 2 moves
-            file.write(f"Last 2 moves: {Last2MovesHistory}\n")
+            # Game Mode
+            file.write(f"Game Mode: {GameMode}\n")
 
             # Which Players turn
             file.write(f"Which Players turn: {NextPlayer}\n")
 
-            # Game Mode
-            file.write(f"Game Mode: {GameMode}\n")
+            # Last 2 moves
+            file.write(f"Last 2 moves: {",".join(Last2MovesHistory)}\n")
 
             # State of the Board
             for Row in range(len(Board)):
-                file.write(",".join(Board[Row])+"\n")
+                if Row < len(Board)-1:
+                    file.write(",".join(Board[Row])+"\n")
+                else:
+                    file.write(",".join(Board[Row]))
         return True
+    
+def LoadGame():
+    global Player1Wins, Player2Wins, PlayerAgainstComputerWins, ComputerWins, Width, Height, Board, Last2MovesHistory, GameMode, PlayersTurnAfterLoadingGame
+    try:
+        with open("cache.txt", "r") as file:
+            # Obtain Players scores
+            Scores = file.readline()
+            Scores = Scores[Scores.index(":")+2:]
+            MainIndex = Scores.index(":")
+            Player1Wins = int(Scores[:MainIndex])
+            Player2Wins = int(Scores[MainIndex+1:Scores.index("\n")])
 
-def ProcessMove(Move, NextPlayer):
+            # # Obtain Player and Computer scores
+            Scores = file.readline()
+            Scores = Scores[Scores.index(":")+2:]
+            MainIndex = Scores.index(":")
+            PlayerAgainstComputerWins = int(Scores[:MainIndex])
+            ComputerWins = int(Scores[MainIndex+1:Scores.index("\n")])
+
+            # Obtain size of the Board
+            Size = file.readline()
+            Size = Size[Size.index(":")+2:]
+            MainIndex = Size.index("x")
+            Width = int(Size[:MainIndex])
+            Height = int(Size[MainIndex+1:Size.index("\n")])
+
+            # Obtain Game mode
+            line = file.readline()
+            GameMode = line[line.index(":")+2:line.index("\n")]
+
+            # Obtain Players turn
+            line = file.readline()
+            PlayersTurnAfterLoadingGame = int(line[line.index(":")+2:line.index("\n")])
+
+            # Obtain last 2 moves history
+            line = file.readline()
+            line = line[line.index(":")+2:line.index("\n")]
+            if line != "[]":
+                Last2MovesHistory = line.split(",")
+            else:
+                Last2MovesHistory = []
+
+            # Obtain the Board
+            for row in range(Height):
+                line = file.readline()
+                if row < Height-1:
+                    line = line[:line.index("\n")]
+                Board.append(line.split(","))
+            print("\033[32mThe game has been successfully loaded!\033[0m")
+        os.remove("cache.txt")
+        return True
+    except:
+         print(f"\033[31mCouldn't load the Game!\033[0m")
+         return False
+
+def ProcessMove(Move, NextPlayer = 0):
     global Board
     try:
-        if ProcessHint(Move) or ProcessUndo(Move) or ProcessSave(Move, NextPlayer):
+        if ProcessHint(Move) or ProcessUndo(Move):
             return "Correct move"
+        if  ProcessSave(Move, NextPlayer):
+            return "Saved Game"
         FirstRef, SecondRef = ProcessCoordinates(Move)
         StartCoords = ConvertRefToCoords(FirstRef)
         EndCoords = ConvertRefToCoords(SecondRef)
@@ -380,17 +442,20 @@ def ProcessComputerMove(NextPlayer):
     print(f"The computer made move: {Move}")
     return IsValid
 
-def PlayGame():
+def PlayGame(LoadedGame):
     global Player1Wins, Player2Wins, PlayerAgainstComputerWins, ComputerWins, Width, Height, Last2MovesHistory, GameMode
     print(f"Valid moves are within the range A1-{ConvertCoordsToRef(Height - 1, Width - 1)}")
     GameOver = False
     try:
-        if GameMode == "Multi Player":
-            NextPlayer = int(input("Enter which player is going first: "))
-            if NextPlayer not in [1, 2]:
-                raise ValueError
+        if not LoadedGame:
+            if GameMode == "Multi Player":
+                NextPlayer = int(input("Enter which player is going first: "))
+                if NextPlayer not in [1, 2]:
+                    raise ValueError
+            else:
+                NextPlayer = random.choice([1, -1])
         else:
-            NextPlayer = random.choice([1, -1])
+            NextPlayer = PlayersTurnAfterLoadingGame
         while not GameOver:
             DisplayState(NextPlayer)
             print()
@@ -410,6 +475,9 @@ def PlayGame():
                             print("\033[31mThere are empty tiles on the way!\033[0m")
                         case "Not enough tiles":
                             print("\033[31mCannot make a move that removes all tiles left from the board!\033[0m")
+                        case "Saved Game":
+                            print("\033[32mThe game has been successfully saved!\033[0m")
+                            return
                         case "Correct move":
                             if GameMode == "Multi Player":
                                 LogMove(Move)
@@ -436,38 +504,44 @@ def Menu(Playing):
     global RandomOption, GameMode
     while Playing:
         ExitMenu = False
+        LoadedGame = False
         while not ExitMenu:
             print()
             DisplayMenu()
             try:
                 UserInput = int(input("Enter a choice: "))
-                if UserInput == 1:
-                    ExitMenu = True
-                    difficulty = SelectDifficulty()
-                    ResetBoard(difficulty)
-                elif UserInput == 2:
-                    SetBoardSize()
-                elif UserInput == 3:
-                    RandomOption = not RandomOption
-                elif UserInput == 4:
-                    ExitMenu = True
-                    if GameMode == "Single Player":
+                match UserInput:
+                    case 1:
+                        ExitMenu = True
+                        difficulty = SelectDifficulty()
+                        ResetBoard(difficulty)
+                    case 2:
+                        SetBoardSize()
+                    case 3:
+                        RandomOption = not RandomOption
+                    case 4:
+                        ExitMenu = True
+                        if GameMode == "Single Player":
+                                GameMode = "Multi Player"
+                                print("Game mode is changed to Multi Player")
+                        LoadTestBoard()
+                    case 5:
+                        if GameMode == "Multi Player":
+                            GameMode = "Single Player"
+                        else:
                             GameMode = "Multi Player"
-                            print("Game mode is changed to Multi Player")
-                    LoadTestBoard()
-                elif UserInput == 5:
-                    if GameMode == "Multi Player":
-                        GameMode = "Single Player"
-                    else:
-                        GameMode = "Multi Player"
-                elif UserInput == 9:
-                    print("Thank you for playing")
-                    ExitMenu = True
-                    Playing = False
+                    case 6:
+                        if LoadGame():
+                            ExitMenu = True
+                            LoadedGame = True
+                    case 9:
+                        print("Thank you for playing")
+                        ExitMenu = True
+                        Playing = False
             except ValueError:
                 print("\033[31mOnly integers are allowed to be entered!\033[0m")
         if Playing:
-            PlayGame()
+            PlayGame(LoadedGame)
 
 def Main():
     Playing = True
