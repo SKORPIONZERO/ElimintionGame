@@ -264,8 +264,11 @@ def Restore(Move):
         for Cell in range(StartCoords[0], EndCoords[0] + 1):
             Board[Cell][StartCoords[1]] = TILE
 
-def ProcessSave(Move, NextPlayer):
+def ProcessSave(Move, NextPlayer, TestGame):
     global Player1Wins, Player2Wins, PlayerAgainstComputerWins, ComputerWins, Width, Height, Board, Last2MovesHistory, GameMode
+    if TestGame:
+        print("\033[31mCannot save a test game!\033[0m")
+        return False
     if Move == "S":
         with open("cache.txt", "w") as file:
             # Players scores
@@ -293,6 +296,8 @@ def ProcessSave(Move, NextPlayer):
                 else:
                     file.write(",".join(Board[Row]))
         return True
+    else:
+        return False
     
 def LoadGame():
     global Player1Wins, Player2Wins, PlayerAgainstComputerWins, ComputerWins, Width, Height, Board, Last2MovesHistory, GameMode, PlayersTurnAfterLoadingGame
@@ -348,12 +353,12 @@ def LoadGame():
          print(f"\033[31mCouldn't load the Game!\033[0m")
          return False
 
-def ProcessMove(Move, NextPlayer = 0):
+def ProcessMove(Move, NextPlayer = 0, TestGame = False):
     global Board
     try:
         if ProcessHint(Move) or ProcessUndo(Move):
             return "Correct move"
-        if  ProcessSave(Move, NextPlayer):
+        if  ProcessSave(Move, NextPlayer, TestGame):
             return "Saved Game"
         FirstRef, SecondRef = ProcessCoordinates(Move)
         StartCoords = ConvertRefToCoords(FirstRef)
@@ -438,7 +443,7 @@ def ProcessComputerMove(NextPlayer):
     print(f"The computer made move: {Move}")
     return IsValid
 
-def PlayGame(LoadedGame):
+def PlayGame(LoadedGame, TestGame):
     global Player1Wins, Player2Wins, PlayerAgainstComputerWins, ComputerWins, Width, Height, Last2MovesHistory, GameMode
     print(f"Valid moves are within the range A1-{ConvertCoordsToRef(Height - 1, Width - 1)}")
     GameOver = False
@@ -459,7 +464,7 @@ def PlayGame(LoadedGame):
             while IsValid != "Correct move":
                 if NextPlayer > 0:
                     Move = input("Enter move: ")
-                    IsValid = ProcessMove(Move, NextPlayer)
+                    IsValid = ProcessMove(Move, NextPlayer, TestGame)
                     match IsValid:
                         case "Outside Index":
                             print("\033[31mIncorrect index of the tile was enterred!\033[0m")
@@ -501,6 +506,7 @@ def Menu(Playing):
     while Playing:
         ExitMenu = False
         LoadedGame = False
+        TestGame = False
         while not ExitMenu:
             print()
             DisplayMenu()
@@ -521,6 +527,7 @@ def Menu(Playing):
                                 GameMode = "Multi Player"
                                 print("Game mode is changed to Multi Player")
                         LoadTestBoard()
+                        TestGame = True
                     case 5:
                         if GameMode == "Multi Player":
                             GameMode = "Single Player"
@@ -537,7 +544,7 @@ def Menu(Playing):
             except ValueError:
                 print("\033[31mOnly integers are allowed to be entered!\033[0m")
         if Playing:
-            PlayGame(LoadedGame)
+            PlayGame(LoadedGame, TestGame)
 
 def Main():
     Playing = True
