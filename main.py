@@ -126,7 +126,7 @@ def SetBoardSize():
             elif Height < 2:
                 print("\033[31mHeight cannot be lower than 2\033[0m")
             Height = int(input("Specify board height: "))
-    except ValueError:
+    except:
         print("\033[31mOnly integers are allowed to be entered!\033[0m")
         print("Height and width become 4")
         Width = 4
@@ -395,7 +395,7 @@ def ProcessMove(Move, NextPlayer = 0, TestGame = False):
         return "Correct move"
     except IndexError:
         return "Outside Index"
-    except ValueError:
+    except:
         return "Incorrect format"
 
 def CheckGameOver():
@@ -498,7 +498,7 @@ def PlayGame(LoadedGame, TestGame):
                     NextPlayer = 1
             if CheckGameOver():
                 GameOver = ProcessGameOver(NextPlayer)
-    except ValueError:
+    except:
         print("\033[31mCan only enter 1 or 2 for player order!\033[0m")
 
 def Menu(Playing):
@@ -541,7 +541,7 @@ def Menu(Playing):
                         print("Thank you for playing")
                         ExitMenu = True
                         Playing = False
-            except ValueError:
+            except:
                 print("\033[31mOnly integers are allowed to be entered!\033[0m")
         if Playing:
             PlayGame(LoadedGame, TestGame)
