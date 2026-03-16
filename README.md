@@ -1,12 +1,10 @@
 # ElimintionGame
 <p align="justify">
-This feature-rich terminal strategy game challenges players to tactically clear a customizable grid—up to 
-26x30—using intuitive "Battleship-style" coordinates (e.g., A1-D1). 
-It boasts a robust Single-Player AI with adjustable difficulty, a Multiplayer mode with persistent score tracking, 
-and a "Random Option" that generates unique board layouts for every session. 
-Beyond core gameplay, the engine includes sophisticated quality-of-life features 
-like an Intelligent Hint System that calculates optimal moves, a move Undo function, 
-and a seamless Save/Load mechanic to preserve your progress across sessions. 
-With high-contrast ANSI color feedback and comprehensive move validation, 
-the game balances deep strategic depth with a polished, user-friendly command-line experience.
+This game offers a comprehensive command-line strategy experience featuring a dynamic grid system that supports board sizes from 4x4 up to 26x30. 
+Players can choose between a standard Multiplayer mode for local head-to-head play or a Single Player mode against an adaptive AI 
+that balances randomized moves with "longest-move" strategic logic. The engine includes advanced gameplay features such as a Randomized Layout 
+option with three difficulty tiers, a Smart Hint system for tactical assistance, and Undo functionality to revert recent moves. For long-term sessions, 
+the software incorporates a robust Save/Load system that preserves the board state, player scores, and turn history to a local cache. 
+To ensure a smooth user experience, the interface utilizes color-coded visual feedback and rigorous input validation to handle coordinate 
+navigation (e.g., A1-D1) and prevent illegal moves or system crashes.
 </p>
