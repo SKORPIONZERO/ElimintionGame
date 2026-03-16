@@ -32,6 +32,15 @@ def ResetBoard(difficulty=1):
                 Board[Row].append(GetRandomTile(difficulty))
             else:
                 Board[Row].append(TILE)
+    CheckBoardForValidity()
+
+def CheckBoardForValidity():
+    global Board
+    while CountTilesLeft() <= 1:
+        coorsinates = [random.randint(0,Height-1),random.randint(0,Width-1)]
+        while Board[coorsinates[0]][coorsinates[1]] != NO_TILE:
+            coorsinates = [random.randint(0,Height-1),random.randint(0,Width-1)]
+        Board[coorsinates[0]][coorsinates[1]] = TILE
 
 def GetRandomTile(difficulty):
     Rand = random.uniform(1, 10)
@@ -352,12 +361,37 @@ def LoadGame():
     except:
          print(f"\033[31mCouldn't load the Game!\033[0m")
          return False
+    
+def ProcessQuit(Move):
+    if Move == "Q":
+        return True
+    else:
+        return False
+    
+def ProcessHelp(Move):
+    if Move == "help":
+        print("You can undo your last move by using U")
+        time.sleep(0.001)
+        print("You can get a hint by using H")
+        time.sleep(0.001)
+        print("You can save the game by using S")
+        time.sleep(0.001)
+        print("You can quit the game by using Q")
+        return True
+    else:
+        return False
 
 def ProcessMove(Move, NextPlayer = 0, TestGame = False):
     global Board
     try:
-        if ProcessHint(Move) or ProcessUndo(Move):
+        if ProcessHelp(Move):
+            return "Help"
+        if ProcessHint(Move):
+            return "Hint"
+        if ProcessUndo(Move):
             return "Correct move"
+        if ProcessQuit(Move):
+            return "Quited Game"
         if  ProcessSave(Move, NextPlayer, TestGame):
             return "Saved Game"
         FirstRef, SecondRef = ProcessCoordinates(Move)
@@ -476,15 +510,19 @@ def PlayGame(LoadedGame, TestGame):
                             print("\033[31mThere are empty tiles on the way!\033[0m")
                         case "Not enough tiles":
                             print("\033[31mCannot make a move that removes all tiles left from the board!\033[0m")
-                        case "Saved Game":
-                            print("\033[32mThe game has been successfully saved!\033[0m")
-                            return
                         case "Correct move":
                             if GameMode == "Multi Player":
                                 LogMove(Move)
                             else:
                                 Last2MovesHistory = []
                                 LogMove(Move)
+                        case "Saved Game":
+                            print("\033[32mThe game has been successfully saved!\033[0m")
+                            return
+                        case "Hint", "Help":
+                            continue
+                        case "Quited Game":
+                            return
                         case _:
                             pass
                 else:
