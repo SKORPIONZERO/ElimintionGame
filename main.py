@@ -257,16 +257,19 @@ def ProcessHint(Move):
     if Move == "H":
         print(f"Hint: Consider {random.choice(SearchForLongestMoves())}")
         return True
+    return False
 
 def ProcessUndo(Move):
     '''Undoes the last move of the player'''
     if Move == "U":
-        if Last2MovesHistory[0] == "Letter Move":
-            print(f"\033[31mCannot undo a single letter move\033[0m")
-        else:
-            Restore(Last2MovesHistory[0])
-            Last2MovesHistory.pop(0)
-            return True
+        if len(Last2MovesHistory):
+            if Last2MovesHistory[0] == "Letter Move":
+                print(f"\033[31mCannot undo a single letter move\033[0m")
+            else:
+                Restore(Last2MovesHistory[0])
+                Last2MovesHistory.pop(0)
+                return True
+    return False
         
 def ClearMoveHistory():
     '''Deletes the first item of the move history'''
@@ -368,7 +371,7 @@ def LoadGame():
             # Obtain last 2 moves history
             line = file.readline()
             line = line[line.index(":")+2:line.index("\n")]
-            if line != "[]":
+            if line != "":
                 Last2MovesHistory = line.split(",")
             else:
                 Last2MovesHistory = []
